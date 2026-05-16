@@ -59,13 +59,13 @@ def test_extra_claims_carried_through(issuer: TokenIssuer) -> None:
 
 
 def test_audience_required_when_configured() -> None:
-    issuer = TokenIssuer(config=JWTConfig(secret="s", audience="api"))
+    issuer = TokenIssuer(config=JWTConfig(secret=random_secret(), audience="api"))
     token = issuer.issue_access("u")
     assert issuer.verify_access(token)["aud"] == "api"
 
 
 def test_issuer_required_when_configured() -> None:
-    issuer = TokenIssuer(config=JWTConfig(secret="s", issuer="hawk"))
+    issuer = TokenIssuer(config=JWTConfig(secret=random_secret(), issuer="hawk"))
     token = issuer.issue_access("u")
     assert issuer.verify_access(token)["iss"] == "hawk"
 
@@ -80,7 +80,7 @@ def test_revoked_refresh_rejected() -> None:
 
 
 def test_revoke_without_revocation_list_errors() -> None:
-    issuer = TokenIssuer(config=JWTConfig(secret="s"))
+    issuer = TokenIssuer(config=JWTConfig(secret=random_secret()))
     token = issuer.issue_refresh("u")
     with pytest.raises(TokenError, match="RevocationList"):
         issuer.revoke_refresh(token)

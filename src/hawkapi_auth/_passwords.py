@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
-from argon2 import PasswordHasher
+from argon2 import PasswordHasher, Type
 from argon2.exceptions import VerifyMismatchError
 
-_hasher = PasswordHasher()
+# Explicit OWASP-aligned parameters (argon2id, 64MiB memory, 3 iterations,
+# parallelism 4). Hash output 32 bytes, salt 16 bytes.
+_hasher = PasswordHasher(
+    time_cost=3,
+    memory_cost=65536,
+    parallelism=4,
+    hash_len=32,
+    salt_len=16,
+    type=Type.ID,
+)
 
 
 def hash_password(password: str) -> str:

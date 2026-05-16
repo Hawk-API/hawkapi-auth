@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from hawkapi_auth._deps import requires_claims, requires_scopes, requires_user
 from hawkapi_auth._passwords import hash_password, needs_rehash, verify_password

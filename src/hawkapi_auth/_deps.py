@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from hawkapi.exceptions import HTTPException
 from hawkapi.requests.request import Request
 
 from hawkapi_auth._tokens import TokenError
+
+logger = logging.getLogger("hawkapi_auth")
 
 
 def _bearer_token(request: Request) -> str | None:
@@ -48,7 +51,12 @@ async def requires_user(request: Request) -> str:
     try:
         claims = issuer.verify_access(token)
     except TokenError as exc:
-        raise HTTPException(401, detail=str(exc), headers={"WWW-Authenticate": "Bearer"}) from exc
+        logger.debug("token verification failed: %s", exc)
+        raise HTTPException(
+            401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from None
     sub = claims.get("sub")
     if not isinstance(sub, str):
         raise HTTPException(401, detail="Token has no subject")
@@ -68,7 +76,12 @@ async def requires_claims(request: Request) -> dict[str, Any]:
     try:
         return issuer.verify_access(token)
     except TokenError as exc:
-        raise HTTPException(401, detail=str(exc), headers={"WWW-Authenticate": "Bearer"}) from exc
+        logger.debug("token verification failed: %s", exc)
+        raise HTTPException(
+            401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from None
 
 
 def requires_scopes(*required: str):
@@ -82,10 +95,18 @@ def requires_scopes(*required: str):
         @app.get("/admin", dependencies=[Depends(requires_scopes("admin"))])
         async def admin(): ...
     """
+    if not required:
+        raise ValueError("requires_scopes() must receive at least one scope")
 
     async def _dep(request: Request) -> dict[str, Any]:
         claims = await requires_claims(request)
-        raw = claims.get("scope") or claims.get("scopes") or []
+        # Explicit precedence: "scope" beats "scopes" even if "scope" is empty.
+        if "scope" in claims:
+            raw = claims["scope"]
+        elif "scopes" in claims:
+            raw = claims["scopes"]
+        else:
+            raw = []
         granted: set[str] = set()
         if isinstance(raw, str):
             granted = set(raw.split())

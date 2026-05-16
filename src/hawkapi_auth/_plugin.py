@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
+from weakref import WeakKeyDictionary
 
 from hawkapi_auth._tokens import JWTConfig, RevocationList, TokenIssuer
 
@@ -13,7 +15,9 @@ class _StateNamespace:
     auth: Any  # set by init_auth
 
 
-_ACTIVE_ISSUERS: dict[int, TokenIssuer] = {}
+# WeakKeyDictionary avoids the ABA hazard where ``id(app)`` is reused
+# after the original app object is garbage-collected.
+_ACTIVE_ISSUERS: WeakKeyDictionary[Any, TokenIssuer] = WeakKeyDictionary()
 _LAST_ISSUER: list[TokenIssuer | None] = [None]
 
 
@@ -24,7 +28,10 @@ def resolve_issuer(app: Any) -> TokenIssuer | None:
     ``scope["app"]``, so the DI dependency uses a module-level registry.
     """
     if app is not None:
-        issuer = _ACTIVE_ISSUERS.get(id(app))
+        try:
+            issuer = _ACTIVE_ISSUERS.get(app)
+        except TypeError:
+            issuer = None
         if issuer is not None:
             return issuer
     return _LAST_ISSUER[0]
@@ -56,7 +63,9 @@ def init_auth(
     if getattr(app, "state", None) is None:
         app.state = _StateNamespace()
     app.state.auth = issuer
-    _ACTIVE_ISSUERS[id(app)] = issuer
+    with contextlib.suppress(TypeError):
+        # Non-weakrefable app — fall back to last-attached lookup only.
+        _ACTIVE_ISSUERS[app] = issuer
     _LAST_ISSUER[0] = issuer
     return issuer
 

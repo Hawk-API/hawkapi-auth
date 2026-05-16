@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hawkapi-auth"
-version = "0.1.0"
+version = "0.2.0"
 description = "JWT auth for HawkAPI — access + refresh tokens, password hashing, DI guards"
 readme = "README.md"
 license = { file = "LICENSE" }

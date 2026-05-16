@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import secrets
 import time
 import uuid
@@ -10,6 +11,12 @@ from typing import Any
 
 import jwt
 from jwt.exceptions import InvalidTokenError
+
+logger = logging.getLogger("hawkapi_auth")
+
+_RESERVED_CLAIMS: frozenset[str] = frozenset(
+    {"exp", "iat", "jti", "type", "sub", "iss", "aud", "nbf"}
+)
 
 
 class TokenError(Exception):
@@ -82,6 +89,14 @@ class TokenIssuer:
         self.revocation.revoke(jti, exp)
 
     def _issue(self, subject: str, token_type: str, ttl: int, extra: dict[str, Any]) -> str:
+        # Drop any caller-supplied keys that collide with reserved JWT claims —
+        # callers must not be able to forge ``exp``, ``type``, ``sub`` etc.
+        dropped = [k for k in extra if k in _RESERVED_CLAIMS]
+        if dropped:
+            logger.warning(
+                "ignoring caller-supplied reserved claim(s): %s", ", ".join(sorted(dropped))
+            )
+            extra = {k: v for k, v in extra.items() if k not in _RESERVED_CLAIMS}
         now = int(time.time())
         payload: dict[str, Any] = {
             "sub": subject,
@@ -98,6 +113,8 @@ class TokenIssuer:
         key = self.config.private_key or self.config.secret
         if not key:
             raise TokenError("JWTConfig has no secret or private_key")
+        if self.config.algorithm.startswith("HS") and len(key.encode("utf-8")) < 32:
+            raise TokenError("HMAC secret must be at least 32 bytes (RFC 7518 §3.2)")
         return jwt.encode(payload, key, algorithm=self.config.algorithm)
 
     def _verify(
