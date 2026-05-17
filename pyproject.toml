@@ -33,8 +33,8 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://pypi.org/project/hawkapi-auth/"
-Repository = "https://github.com/ashimov/hawkapi-auth"
-Issues = "https://github.com/ashimov/hawkapi-auth/issues"
+Repository = "https://github.com/Hawk-API/hawkapi-auth"
+Issues = "https://github.com/Hawk-API/hawkapi-auth/issues"
 
 [project.optional-dependencies]
 dev = [

@@ -1,6 +1,6 @@
 # hawkapi-auth
 
-JWT auth for [HawkAPI](https://github.com/ashimov/HawkAPI). Access + refresh tokens, argon2id password hashing, DI guards, scope-based access control.
+JWT auth for [HawkAPI](https://github.com/Hawk-API/HawkAPI). Access + refresh tokens, argon2id password hashing, DI guards, scope-based access control.
 
 ## Install
 
@@ -144,7 +144,7 @@ if needs_rehash(h):
 ## Development
 
 ```bash
-git clone https://github.com/ashimov/hawkapi-auth.git
+git clone https://github.com/Hawk-API/hawkapi-auth.git
 cd hawkapi-auth
 uv sync --extra dev
 uv run pytest -q
